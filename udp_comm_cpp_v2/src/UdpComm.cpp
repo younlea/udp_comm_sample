@@ -52,17 +52,24 @@ void UdpComm::send_data(const std::string &command, const std::string &data) {
 
     sendto(sockfd_, message.c_str(), message.size(), 0, (const struct sockaddr *)&destaddr, sizeof(destaddr));
 }
-
 void UdpComm::receive_udp() {
     char buffer[1024];
     struct sockaddr_in srcaddr;
     socklen_t len = sizeof(srcaddr);
 
     while (true) {
-        int n = recvfrom(sockfd_, buffer, 1024, 0, (struct sockaddr *)&srcaddr, &len);
-        buffer[n] = '\0';
-        std::string command(buffer, 4);
-        std::string data(buffer + 4, n - 4);
+        int n = recvfrom(sockfd_, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&srcaddr, &len);
+        if (n < 0) {
+            perror("recvfrom error");
+            continue;
+        }
+
+        buffer[n] = '\0';  // Ensure null termination
+
+        std::string message(buffer);
+        std::string command = message.substr(0, 4);
+        std::string data = message.substr(4);
+
         char addr_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &srcaddr.sin_addr, addr_str, INET_ADDRSTRLEN);
 
